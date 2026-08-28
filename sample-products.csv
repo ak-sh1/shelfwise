@@ -1,0 +1,3 @@
+sku,name,description,category,unit_cost,unit_price,quantity_on_hand,reorder_level
+STK-001,Desk Organizer,Bamboo tray,Office,3.50,12.00,25,8
+STK-002,USB-C Cable 2m,Braided charging cable,Electronics,2.00,9.00,40,15

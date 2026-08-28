@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: shelfwise
+      POSTGRES_PASSWORD: shelfwise
+      POSTGRES_DB: shelfwise
+    ports:
+      - "5432:5432"
+    volumes:
+      - shelfwise_pg:/var/lib/postgresql/data
+
+volumes:
+  shelfwise_pg:
