@@ -38,8 +38,7 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
+      # Free web services cannot receive private-network traffic.
+      # Use the public HTTPS URL (not hostport).
       - key: SHELFWISE_API_ORIGIN
-        fromService:
-          type: web
-          name: shelfwise-backend
-          property: hostport
+        value: https://shelfwise-backend.onrender.com
