@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
     "*.cursor.com",
     "*.cursor.sh",
     "*.cursorshare.com",
+    "*.trycloudflare.com",
+    "*.cloudflare.com",
   ],
   async rewrites() {
     return [

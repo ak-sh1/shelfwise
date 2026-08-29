@@ -3,6 +3,15 @@ from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def normalize_database_url(url: str) -> str:
+    # Render/Heroku style URLs → SQLAlchemy + psycopg2
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://") :]
+    if url.startswith("postgresql://") and "+psycopg2" not in url:
+        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+    return url
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -16,6 +25,10 @@ class Settings(BaseSettings):
     )
     openai_api_key: str | None = None
     openai_model: str = "gpt-4o-mini"
+
+    @property
+    def sqlalchemy_database_url(self) -> str:
+        return normalize_database_url(self.database_url)
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -1,0 +1,45 @@
+# Render Blueprint — connect repo github.com/ak-sh1/shelfwise
+# Dashboard → New → Blueprint
+
+databases:
+  - name: shelfwise-db
+    plan: free
+
+services:
+  - type: web
+    name: shelfwise-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: shelfwise-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: PYTHONPATH
+        value: /app
+
+  - type: web
+    name: shelfwise-web
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npx next start --hostname 0.0.0.0 --port $PORT
+    healthCheckPath: /login
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: shelfwise-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: SHELFWISE_API_ORIGIN
+        fromService:
+          name: shelfwise-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL

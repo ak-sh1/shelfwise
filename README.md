@@ -23,6 +23,35 @@ Multi-user inventory and order management for a small shop.
 | Owner | owner@shelfwise.demo    | owner123  |
 | Staff | staff@shelfwise.demo    | staff123  |
 
+## Live demo
+
+**Public URL (while this Cloud Agent is running):**  
+https://leon-slideshow-com-recreation.trycloudflare.com
+
+| Role | Email | Password |
+|------|--------|----------|
+| Owner | owner@shelfwise.demo | owner123 |
+| Staff | staff@shelfwise.demo | staff123 |
+
+> This Cloudflare tunnel is temporary. For a permanent resume link, use the Render blueprint below.
+
+## Deploy (permanent, free)
+
+### Option A — Render Blueprint (recommended)
+
+1. Open [Render Blueprint](https://dashboard.render.com/blueprints/new) and connect `ak-sh1/shelfwise`.
+2. Render creates free Postgres + `shelfwise-api` + `shelfwise-web`.
+3. After both services are live, set API `CORS_ORIGINS` to your web URL (e.g. `https://shelfwise-web.onrender.com`) if you did not use `*`.
+4. Open the **shelfwise-web** URL — use the demo logins above.
+
+### Option B — Vercel (UI) + Render (API/DB)
+
+1. Deploy `backend/` Docker service + Postgres on Render.
+2. Deploy the repo root on [Vercel](https://vercel.com/new) with env:
+   - `NEXT_PUBLIC_API_URL` = your Render API URL (no trailing slash)
+   - `SHELFWISE_API_ORIGIN` = same API URL
+3. Set API `CORS_ORIGINS` to your Vercel domain.
+
 ## Prerequisites
 
 - Node.js 20+
