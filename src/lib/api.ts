@@ -149,5 +149,6 @@ export function formatWhen(iso: string) {
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    timeZone: "UTC",
   }).format(d);
 }

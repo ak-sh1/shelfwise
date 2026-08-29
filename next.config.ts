@@ -14,12 +14,20 @@ const nextConfig: NextConfig = {
     "*.cursorshare.com",
     "*.trycloudflare.com",
     "*.cloudflare.com",
+    "*.vercel.app",
   ],
   async rewrites() {
+    const origin = (
+      process.env.SHELFWISE_API_ORIGIN || API_ORIGIN
+    ).replace(/\/$/, "");
+    // Skip localhost proxy on Vercel unless a hosted API origin is configured.
+    if (process.env.VERCEL && /127\.0\.0\.1|localhost/.test(origin)) {
+      return [];
+    }
     return [
       {
         source: "/api/:path*",
-        destination: `${API_ORIGIN}/:path*`,
+        destination: `${origin}/:path*`,
       },
     ];
   },

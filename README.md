@@ -25,32 +25,36 @@ Multi-user inventory and order management for a small shop.
 
 ## Live demo
 
-**Public URL (while this Cloud Agent is running):**  
-https://leon-slideshow-com-recreation.trycloudflare.com
+**Frontend (Vercel):** [https://shelfwise-ak-dac3.vercel.app](https://shelfwise-ak-dac3.vercel.app)
+
+The UI is deployed on Vercel. The API runs on Render (Postgres + FastAPI). After both are live, set Vercel env `SHELFWISE_API_ORIGIN` to your Render API URL (see Deploy below).
 
 | Role | Email | Password |
 |------|--------|----------|
 | Owner | owner@shelfwise.demo | owner123 |
 | Staff | staff@shelfwise.demo | staff123 |
 
-> This Cloudflare tunnel is temporary. For a permanent resume link, use the Render blueprint below.
+## Deploy (permanent)
 
-## Deploy (permanent, free)
+### 1 — Vercel (UI) — already connected
 
-### Option A — Render Blueprint (recommended)
+Repo `ak-sh1/shelfwise` → project **shelfwise** on team **AK**. Pushes to `main` auto-deploy.
+
+### 2 — Render (API + Postgres)
 
 1. Open [Render Blueprint](https://dashboard.render.com/blueprints/new) and connect `ak-sh1/shelfwise`.
-2. Render creates free Postgres + `shelfwise-api` + `shelfwise-web`.
-3. After both services are live, set API `CORS_ORIGINS` to your web URL (e.g. `https://shelfwise-web.onrender.com`) if you did not use `*`.
-4. Open the **shelfwise-web** URL — use the demo logins above.
+2. Apply the blueprint (creates **shelfwise-db** + **shelfwise-api**).
+3. Copy the API URL when live (e.g. `https://shelfwise-api.onrender.com`).
 
-### Option B — Vercel (UI) + Render (API/DB)
+### 3 — Link Vercel → API
 
-1. Deploy `backend/` Docker service + Postgres on Render.
-2. Deploy the repo root on [Vercel](https://vercel.com/new) with env:
-   - `NEXT_PUBLIC_API_URL` = your Render API URL (no trailing slash)
-   - `SHELFWISE_API_ORIGIN` = same API URL
-3. Set API `CORS_ORIGINS` to your Vercel domain.
+In [Vercel → shelfwise → Settings → Environment Variables](https://vercel.com/ak-dac3/shelfwise/settings/environment-variables):
+
+| Name | Value |
+|------|--------|
+| `SHELFWISE_API_ORIGIN` | `https://shelfwise-api.onrender.com` (your Render API URL, no trailing slash) |
+
+Redeploy production. The Next.js app proxies `/api/*` to that origin.
 
 ## Prerequisites
 
