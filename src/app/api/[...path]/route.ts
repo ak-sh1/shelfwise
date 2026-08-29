@@ -45,7 +45,10 @@ async function proxy(
   }
 
   try {
-    const res = await fetch(url, init);
+    const res = await fetch(url, {
+      ...init,
+      signal: AbortSignal.timeout(20_000),
+    });
     const body = await res.arrayBuffer();
     const responseHeaders = new Headers();
     const resType = res.headers.get("content-type");
@@ -59,9 +62,12 @@ async function proxy(
   } catch (err) {
     const message = err instanceof Error ? err.message : "proxy failed";
     console.error("[api-proxy]", { url, origin, message });
+    const timedOut = /abort|timeout/i.test(message);
     return NextResponse.json(
       {
-        detail: `API unreachable at ${origin}. Check SHELFWISE_API_ORIGIN and that shelfwise-backend is live. (${message})`,
+        detail: timedOut
+          ? `API timed out at ${origin}. The backend may be sleeping or down — retry in ~30s, or check the shelfwise service logs.`
+          : `API unreachable at ${origin}. (${message})`,
       },
       { status: 502 }
     );

@@ -1,5 +1,9 @@
-# Render Blueprint — full stack (Postgres + API + Next.js UI)
+# Render Blueprint — one web app + Postgres (all on Render free tier)
 # https://dashboard.render.com/blueprints/new → connect ak-sh1/shelfwise
+#
+# Creates:
+#   shelfwise-db  — PostgreSQL
+#   shelfwise     — Next.js UI + FastAPI in one Docker service
 
 databases:
   - name: shelfwise-db
@@ -7,16 +11,13 @@ databases:
 
 services:
   - type: web
-    name: shelfwise-backend
-    runtime: python
+    name: shelfwise
+    runtime: docker
     plan: free
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /health
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /login
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.12.8"
       - key: DATABASE_URL
         fromDatabase:
           name: shelfwise-db
@@ -25,20 +26,7 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         value: "*"
-      - key: PYTHONPATH
-        value: .
-
-  - type: web
-    name: shelfwise-web
-    runtime: node
-    plan: free
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start:render
-    healthCheckPath: /login
-    envVars:
-      - key: NODE_VERSION
-        value: "20"
-      # Free web services cannot receive private-network traffic.
-      # Use the public HTTPS URL (not hostport).
       - key: SHELFWISE_API_ORIGIN
-        value: https://shelfwise-backend.onrender.com
+        value: http://127.0.0.1:8331
+      - key: PYTHONPATH
+        value: /app/backend

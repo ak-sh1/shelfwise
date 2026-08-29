@@ -55,7 +55,11 @@ async function request<T>(
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+    signal: options.signal ?? AbortSignal.timeout(25_000),
+  });
   if (!res.ok) {
     if (res.status === 401 && auth) handleUnauthorized();
     let message = res.statusText;

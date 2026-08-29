@@ -29,7 +29,13 @@ export default function LoginPage() {
     try {
       await login(email, password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      const msg =
+        err instanceof Error
+          ? /abort|timeout/i.test(err.message)
+            ? "Sign-in timed out. The server may be waking up — wait 30s and try again."
+            : err.message
+          : "Login failed";
+      setError(msg);
     } finally {
       setSubmitting(false);
     }
