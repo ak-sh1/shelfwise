@@ -9,10 +9,10 @@ Multi-user inventory and order management for a small shop.
 ## What it does
 
 - Owner / staff roles for one shop
-- Product catalog with SKUs, cost/price, reorder levels
-- Manual stock adjustments with movement history
-- Purchase & sale orders (draft → confirm applies stock; sales block on insufficient qty)
-- Low-stock dashboard
+- Product catalog with SKUs, cost/price, reorder levels, and edit
+- Manual stock adjustments with **movement history**
+- Purchase & sale orders (draft → confirm applies stock; expand for line detail)
+- Low-stock dashboard plus **recent activity** feed
 - CSV product import (owners)
 - Optional AI category suggest (falls back to keyword rules without an API key)
 

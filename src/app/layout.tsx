@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Syne, Figtree, IBM_Plex_Mono } from "next/font/google";
 
 import { AuthProvider } from "@/lib/auth";
+import { ToastProvider } from "@/lib/toast";
 import "./globals.css";
 
 const display = Syne({
@@ -35,7 +36,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${display.variable} ${body.variable} ${mono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   );

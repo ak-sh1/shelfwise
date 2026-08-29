@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.models import OrderStatus, OrderType, UserRole
+from app.models import MovementType, OrderStatus, OrderType, UserRole
 
 
 class TokenResponse(BaseModel):
@@ -135,3 +135,28 @@ class CsvImportResult(BaseModel):
     created: int
     updated: int
     errors: list[str]
+
+
+class StockMovementOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    product_id: int
+    product_sku: str
+    product_name: str
+    movement_type: MovementType
+    quantity_delta: int
+    note: str | None
+    order_id: int | None
+    created_by_name: str | None
+    created_at: datetime
+
+
+class ActivityItem(BaseModel):
+    id: int
+    kind: Literal["movement"]
+    summary: str
+    detail: str | None
+    created_at: datetime
+    product_id: int | None = None
+    order_id: int | None = None

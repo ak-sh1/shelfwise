@@ -9,8 +9,16 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import Order, OrderLine, OrderStatus, OrderType, Product, User
-from app.schemas import DashboardStats, ProductOut
+from app.models import (
+    Order,
+    OrderLine,
+    OrderStatus,
+    OrderType,
+    Product,
+    StockMovement,
+    User,
+)
+from app.schemas import ActivityItem, DashboardStats, ProductOut
 
 router = APIRouter(tags=["dashboard"])
 
@@ -99,3 +107,41 @@ def low_stock(
         .all()
     )
     return [_product_out(p) for p in products if p.quantity_on_hand <= p.reorder_level]
+
+
+@router.get("/dashboard/activity", response_model=list[ActivityItem])
+def recent_activity(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    limit: int = 12,
+) -> list[ActivityItem]:
+    limit = max(1, min(limit, 50))
+    rows = (
+        db.query(StockMovement, Product, User.full_name)
+        .join(Product, Product.id == StockMovement.product_id)
+        .outerjoin(User, User.id == StockMovement.created_by_id)
+        .filter(Product.shop_id == user.shop_id)
+        .order_by(StockMovement.created_at.desc(), StockMovement.id.desc())
+        .limit(limit)
+        .all()
+    )
+    items: list[ActivityItem] = []
+    for movement, product, actor_name in rows:
+        sign = "+" if movement.quantity_delta > 0 else ""
+        who = actor_name or "System"
+        summary = (
+            f"{who} · {movement.movement_type.value} {sign}{movement.quantity_delta} "
+            f"on {product.sku}"
+        )
+        items.append(
+            ActivityItem(
+                id=movement.id,
+                kind="movement",
+                summary=summary,
+                detail=movement.note,
+                created_at=movement.created_at,
+                product_id=product.id,
+                order_id=movement.order_id,
+            )
+        )
+    return items

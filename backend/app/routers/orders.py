@@ -131,23 +131,43 @@ def confirm_order(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> OrderOut:
-    order = _get_shop_order(db, order_id, user.shop_id)
+    order = (
+        db.query(Order)
+        .options(joinedload(Order.lines).joinedload(OrderLine.product))
+        .filter(Order.id == order_id, Order.shop_id == user.shop_id)
+        .with_for_update()
+        .first()
+    )
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
     if order.status != OrderStatus.draft:
         raise HTTPException(status_code=400, detail="Only draft orders can be confirmed")
 
-    # Validate stock for sales before mutating
+    product_ids = [line.product_id for line in order.lines]
+    locked_products = {
+        p.id: p
+        for p in db.query(Product)
+        .filter(Product.id.in_(product_ids), Product.shop_id == user.shop_id)
+        .with_for_update()
+        .all()
+    }
+
     if order.order_type == OrderType.sale:
         for line in order.lines:
-            if line.product.quantity_on_hand < line.quantity:
+            product = locked_products.get(line.product_id)
+            if product is None:
+                raise HTTPException(status_code=400, detail=f"Product {line.product_id} missing")
+            if product.quantity_on_hand < line.quantity:
                 raise HTTPException(
                     status_code=400,
                     detail=(
-                        f"Insufficient stock for {line.product.sku}: "
-                        f"have {line.product.quantity_on_hand}, need {line.quantity}"
+                        f"Insufficient stock for {product.sku}: "
+                        f"have {product.quantity_on_hand}, need {line.quantity}"
                     ),
                 )
 
     for line in order.lines:
+        product = locked_products[line.product_id]
         if order.order_type == OrderType.purchase:
             delta = line.quantity
             movement_type = MovementType.purchase
@@ -155,7 +175,7 @@ def confirm_order(
             delta = -line.quantity
             movement_type = MovementType.sale
 
-        line.product.quantity_on_hand += delta
+        product.quantity_on_hand += delta
         db.add(
             StockMovement(
                 product_id=line.product_id,

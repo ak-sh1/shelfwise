@@ -1,8 +1,10 @@
 import type {
+  ActivityItem,
   DashboardStats,
   Order,
   OrderType,
   Product,
+  StockMovement,
   User,
 } from "@/lib/types";
 
@@ -31,6 +33,14 @@ export class ApiError extends Error {
   }
 }
 
+function handleUnauthorized() {
+  if (typeof window === "undefined") return;
+  setToken(null);
+  if (!window.location.pathname.startsWith("/login")) {
+    window.location.href = "/login";
+  }
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -47,6 +57,7 @@ async function request<T>(
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   if (!res.ok) {
+    if (res.status === 401 && auth) handleUnauthorized();
     let message = res.statusText;
     try {
       const data = await res.json();
@@ -74,6 +85,7 @@ export const api = {
   me: () => request<User>("/auth/me"),
   dashboard: () => request<DashboardStats>("/dashboard"),
   lowStock: () => request<Product[]>("/dashboard/low-stock"),
+  activity: () => request<ActivityItem[]>("/dashboard/activity"),
   products: (params?: { q?: string; low_stock?: boolean }) => {
     const sp = new URLSearchParams();
     if (params?.q) sp.set("q", params.q);
@@ -93,6 +105,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ quantity_delta, note }),
     }),
+  movements: (id: number) =>
+    request<StockMovement[]>(`/products/${id}/movements`),
   importCsv: (file: File) => {
     const form = new FormData();
     form.append("file", file);
@@ -125,4 +139,15 @@ export function money(value: string | number) {
     style: "currency",
     currency: "USD",
   }).format(Number.isFinite(n) ? n : 0);
+}
+
+export function formatWhen(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(d);
 }

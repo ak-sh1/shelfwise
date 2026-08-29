@@ -17,6 +17,7 @@ from app.schemas import (
     ProductOut,
     ProductUpdate,
     StockAdjustRequest,
+    StockMovementOut,
 )
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -176,6 +177,45 @@ def adjust_stock(
     return _product_out(product)
 
 
+@router.get("/{product_id}/movements", response_model=list[StockMovementOut])
+def list_movements(
+    product_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> list[StockMovementOut]:
+    product = (
+        db.query(Product)
+        .filter(Product.id == product_id, Product.shop_id == user.shop_id)
+        .first()
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    rows = (
+        db.query(StockMovement, User.full_name)
+        .outerjoin(User, User.id == StockMovement.created_by_id)
+        .filter(StockMovement.product_id == product.id)
+        .order_by(StockMovement.created_at.desc(), StockMovement.id.desc())
+        .limit(100)
+        .all()
+    )
+    return [
+        StockMovementOut(
+            id=movement.id,
+            product_id=product.id,
+            product_sku=product.sku,
+            product_name=product.name,
+            movement_type=movement.movement_type,
+            quantity_delta=movement.quantity_delta,
+            note=movement.note,
+            order_id=movement.order_id,
+            created_by_name=full_name,
+            created_at=movement.created_at,
+        )
+        for movement, full_name in rows
+    ]
+
+
 @router.post("/import-csv", response_model=CsvImportResult)
 async def import_csv(
     file: UploadFile = File(...),
@@ -200,6 +240,7 @@ async def import_csv(
     created = 0
     updated = 0
     errors: list[str] = []
+    pending_movements: list[tuple[Product, int]] = []
 
     for idx, row in enumerate(reader, start=2):
         normalized = {k.strip().lower(): (v or "").strip() for k, v in row.items() if k}
@@ -232,6 +273,7 @@ async def import_csv(
             # quantity only set on create to avoid silent stock overwrites
             updated += 1
         else:
+            initial_qty = max(qty, 0)
             product = Product(
                 shop_id=user.shop_id,
                 sku=sku,
@@ -240,11 +282,25 @@ async def import_csv(
                 category=normalized.get("category") or "Uncategorized",
                 unit_cost=unit_cost,
                 unit_price=unit_price,
-                quantity_on_hand=max(qty, 0),
+                quantity_on_hand=initial_qty,
                 reorder_level=max(reorder, 0),
             )
             db.add(product)
+            db.flush()
+            if initial_qty:
+                pending_movements.append((product, initial_qty))
             created += 1
+
+    for product, initial_qty in pending_movements:
+        db.add(
+            StockMovement(
+                product_id=product.id,
+                movement_type=MovementType.adjust,
+                quantity_delta=initial_qty,
+                note="CSV import initial stock",
+                created_by_id=user.id,
+            )
+        )
 
     db.commit()
     return CsvImportResult(created=created, updated=updated, errors=errors)

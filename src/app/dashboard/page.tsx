@@ -22,21 +22,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { api, money } from "@/lib/api";
-import type { DashboardStats, Product } from "@/lib/types";
+import { api, formatWhen, money } from "@/lib/api";
+import type { ActivityItem, DashboardStats, Product } from "@/lib/types";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [lowStock, setLowStock] = useState<Product[]>([]);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([api.dashboard(), api.lowStock()])
-      .then(([s, low]) => {
+    setLoading(true);
+    Promise.all([api.dashboard(), api.lowStock(), api.activity()])
+      .then(([s, low, act]) => {
         setStats(s);
         setLowStock(low);
+        setActivity(act);
+        setError(null);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"));
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : "Failed to load")
+      )
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -71,26 +79,26 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="SKUs"
-          value={stats ? String(stats.product_count) : "—"}
+          value={loading || !stats ? "—" : String(stats.product_count)}
           icon={Package}
           hint="Active products"
         />
         <StatCard
           title="Low stock"
-          value={stats ? String(stats.low_stock_count) : "—"}
+          value={loading || !stats ? "—" : String(stats.low_stock_count)}
           icon={AlertTriangle}
           hint="At or below reorder"
           warn={!!stats && stats.low_stock_count > 0}
         />
         <StatCard
           title="Inventory value"
-          value={stats ? money(stats.inventory_value) : "—"}
+          value={loading || !stats ? "—" : money(stats.inventory_value)}
           icon={Warehouse}
           hint="At unit cost"
         />
         <StatCard
           title="Open drafts"
-          value={stats ? String(stats.open_orders) : "—"}
+          value={loading || !stats ? "—" : String(stats.open_orders)}
           icon={ShoppingCart}
           hint="Orders awaiting confirm"
         />
@@ -106,13 +114,13 @@ export default function DashboardPage() {
             <div className="rounded-xl border border-border/70 bg-background/40 p-4">
               <p className="text-xs text-mist">Sales</p>
               <p className="mt-1 font-display text-2xl font-semibold text-signal">
-                {stats ? money(stats.sales_this_month) : "—"}
+                {loading || !stats ? "—" : money(stats.sales_this_month)}
               </p>
             </div>
             <div className="rounded-xl border border-border/70 bg-background/40 p-4">
               <p className="text-xs text-mist">Purchases</p>
               <p className="mt-1 font-display text-2xl font-semibold">
-                {stats ? money(stats.purchases_this_month) : "—"}
+                {loading || !stats ? "—" : money(stats.purchases_this_month)}
               </p>
             </div>
           </CardContent>
@@ -124,8 +132,12 @@ export default function DashboardPage() {
             <CardDescription>Reorder before you sell out</CardDescription>
           </CardHeader>
           <CardContent>
-            {lowStock.length === 0 ? (
-              <p className="text-sm text-mist">All products above reorder level.</p>
+            {loading ? (
+              <p className="text-sm text-mist">Loading alerts…</p>
+            ) : lowStock.length === 0 ? (
+              <p className="text-sm text-mist">
+                All products above reorder level.
+              </p>
             ) : (
               <Table>
                 <TableHeader>
@@ -153,6 +165,41 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Recent activity</CardTitle>
+          <CardDescription>Stock movements across the shop</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-sm text-mist">Loading activity…</p>
+          ) : activity.length === 0 ? (
+            <p className="text-sm text-mist">
+              No movements yet. Adjust stock or confirm an order to see history.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {activity.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex flex-wrap items-start justify-between gap-2 border-b border-border/50 pb-3 last:border-0 last:pb-0"
+                >
+                  <div>
+                    <p className="text-sm font-medium">{item.summary}</p>
+                    {item.detail ? (
+                      <p className="text-xs text-mist">{item.detail}</p>
+                    ) : null}
+                  </div>
+                  <time className="text-xs text-mist whitespace-nowrap">
+                    {formatWhen(item.created_at)}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </AppShell>
   );
 }

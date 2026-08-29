@@ -3,7 +3,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.auth import hash_password
-from app.models import OrderType, Product, Shop, User, UserRole
+from app.models import MovementType, Product, Shop, StockMovement, User, UserRole
 
 
 SEED_PRODUCTS = [
@@ -72,6 +72,7 @@ SEED_PRODUCTS = [
 
 def seed_if_empty(db: Session) -> None:
     if db.query(Shop).first() is not None:
+        backfill_missing_opening_movements(db)
         return
 
     shop = Shop(name="Northfield Goods")
@@ -93,12 +94,42 @@ def seed_if_empty(db: Session) -> None:
         role=UserRole.staff,
     )
     db.add_all([owner, staff])
+    db.flush()
 
     for item in SEED_PRODUCTS:
-        db.add(Product(shop_id=shop.id, **item))
+        product = Product(shop_id=shop.id, **item)
+        db.add(product)
+        db.flush()
+        if product.quantity_on_hand:
+            db.add(
+                StockMovement(
+                    product_id=product.id,
+                    movement_type=MovementType.adjust,
+                    quantity_delta=product.quantity_on_hand,
+                    note="Opening stock",
+                    created_by_id=owner.id,
+                )
+            )
 
     db.commit()
 
 
-# Re-export for typing clarity in routers
-__all__ = ["seed_if_empty", "OrderType"]
+def backfill_missing_opening_movements(db: Session) -> None:
+    """For DBs seeded before movements were recorded."""
+    if db.query(StockMovement).first() is not None:
+        return
+    owner = db.query(User).filter(User.role == UserRole.owner).first()
+    products = db.query(Product).all()
+    for product in products:
+        if product.quantity_on_hand <= 0:
+            continue
+        db.add(
+            StockMovement(
+                product_id=product.id,
+                movement_type=MovementType.adjust,
+                quantity_delta=product.quantity_on_hand,
+                note="Opening stock",
+                created_by_id=owner.id if owner else None,
+            )
+        )
+    db.commit()

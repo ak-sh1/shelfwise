@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { api, money } from "@/lib/api";
+import { useToast } from "@/lib/toast";
 import type { OrderType, Product } from "@/lib/types";
 
 type LineDraft = {
@@ -28,6 +29,7 @@ type LineDraft = {
 
 export default function NewOrderPage() {
   const router = useRouter();
+  const { push } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [orderType, setOrderType] = useState<OrderType>("sale");
   const [counterparty, setCounterparty] = useState("");
@@ -82,9 +84,8 @@ export default function NewOrderPage() {
         throw new Error("Add at least one product line");
       }
       const order = await api.createOrder(payload);
+      push(`Draft order #${order.id} saved`);
       router.push("/orders");
-      // keep message via query would be nice; list will show the draft
-      void order;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create order");
     } finally {

@@ -1,6 +1,7 @@
 export type UserRole = "owner" | "staff";
 export type OrderType = "purchase" | "sale";
 export type OrderStatus = "draft" | "confirmed" | "cancelled";
+export type MovementType = "adjust" | "purchase" | "sale";
 
 export type User = {
   id: number;
@@ -55,4 +56,27 @@ export type DashboardStats = {
   open_orders: number;
   sales_this_month: string;
   purchases_this_month: string;
+};
+
+export type StockMovement = {
+  id: number;
+  product_id: number;
+  product_sku: string;
+  product_name: string;
+  movement_type: MovementType;
+  quantity_delta: number;
+  note: string | null;
+  order_id: number | null;
+  created_by_name: string | null;
+  created_at: string;
+};
+
+export type ActivityItem = {
+  id: number;
+  kind: "movement";
+  summary: string;
+  detail: string | null;
+  created_at: string;
+  product_id: number | null;
+  order_id: number | null;
 };
