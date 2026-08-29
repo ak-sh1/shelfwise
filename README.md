@@ -1,10 +1,11 @@
 # Shelfwise
 
-**Repo:** [github.com/ak-sh1/shelfwise](https://github.com/ak-sh1/shelfwise)
-
 Multi-user inventory and order management for a small shop.
 
-**Stack:** Next.js (UI) · FastAPI (API) · PostgreSQL · optional OpenAI categorize
+**Live demo:** [https://shelfwise-2gup.onrender.com](https://shelfwise-2gup.onrender.com)  
+**Repo:** [github.com/ak-sh1/shelfwise](https://github.com/ak-sh1/shelfwise)
+
+**Stack:** Next.js · FastAPI · PostgreSQL · Docker · Render
 
 ## Demo logins
 
@@ -13,19 +14,27 @@ Multi-user inventory and order management for a small shop.
 | Owner | owner@shelfwise.demo    | owner123  |
 | Staff | staff@shelfwise.demo    | staff123  |
 
-## Deploy on Render (recommended)
+> Free Render tier: after idle time, the first request may take ~30–60s while the service wakes up.
 
-One Blueprint creates:
+## What it does
 
-- **shelfwise-db** — Postgres  
-- **shelfwise** — UI + API in a single Docker web service  
+- Owner / staff roles with JWT auth for one shop
+- Product catalog (CRUD, CSV import, low-stock filter)
+- Stock adjustments with movement history
+- Purchase & sale orders (draft → confirm updates inventory)
+- Dashboard with low-stock alerts and recent activity
+- Optional AI category suggest (heuristic fallback without an API key)
 
-1. Delete old split services if you have them (`shelfwise-web`, `shelfwise-backend`, broken `shelfwise-api`) so names/ports don’t collide.
-2. Open [New Blueprint](https://dashboard.render.com/blueprints/new) → connect `ak-sh1/shelfwise` (`main`) → **Apply**.
-3. Wait until **shelfwise** is **Live** (first Docker build can take several minutes).
-4. Open `https://shelfwise.onrender.com` (exact URL is on the service page).
+## Deploy on Render
 
-Free-tier cold start: first request after idle may take ~30–60s.
+Blueprint (`render.yaml`) creates:
+
+- **shelfwise-db** — Postgres
+- **shelfwise** — UI + API in one Docker web service
+
+1. Open [New Blueprint](https://dashboard.render.com/blueprints/new) → connect `ak-sh1/shelfwise` (`main`) → Apply.
+2. Wait until **shelfwise** is Live.
+3. Open the service URL (e.g. `https://shelfwise-2gup.onrender.com`).
 
 ## Local development
 
@@ -60,14 +69,14 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
-Open [http://127.0.0.1:4331](http://127.0.0.1:4331).
+Open [http://127.0.0.1:4331](http://127.0.0.1:4331). The app proxies `/api/*` to FastAPI.
 
 ## Project layout
 
 ```
 backend/app/     FastAPI
 src/             Next.js UI
-Dockerfile       Combined UI+API image for Render
-start.sh         Starts uvicorn + next on Render
-render.yaml      Blueprint (db + one web service)
+Dockerfile       Combined UI+API image (Render)
+start.sh         Starts uvicorn + Next.js
+render.yaml      Blueprint (db + web)
 ```

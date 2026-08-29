@@ -13,7 +13,7 @@ function resolveApiOrigin(): string {
 
   if (!raw) return "http://127.0.0.1:8331";
   if (/^https?:\/\//i.test(raw)) return raw;
-  // Render private hostport looks like "shelfwise-backend:10000"
+  // host:port without scheme (e.g. local or private network)
   return `http://${raw}`;
 }
 
