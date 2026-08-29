@@ -9,23 +9,22 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { api, money } from "@/lib/api";
 import { useToast } from "@/lib/toast";
 import type { OrderType, Product } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type LineDraft = {
   key: string;
   product_id: string;
   quantity: string;
 };
+
+const fieldClass = cn(
+  "flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none",
+  "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+);
 
 export default function NewOrderPage() {
   const router = useRouter();
@@ -115,19 +114,16 @@ export default function NewOrderPage() {
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label>Order type</Label>
-            <Select
+            <Label htmlFor="order-type">Order type</Label>
+            <select
+              id="order-type"
+              className={fieldClass}
               value={orderType}
-              onValueChange={(v) => setOrderType(v as OrderType)}
+              onChange={(e) => setOrderType(e.target.value as OrderType)}
             >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sale">Sale (decreases stock)</SelectItem>
-                <SelectItem value="purchase">Purchase (increases stock)</SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="sale">Sale (decreases stock)</option>
+              <option value="purchase">Purchase (increases stock)</option>
+            </select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="counterparty">
@@ -179,32 +175,34 @@ export default function NewOrderPage() {
               className="grid gap-3 rounded-xl border border-border/70 bg-background/40 p-3 sm:grid-cols-[1fr_120px_40px]"
             >
               <div className="space-y-1.5">
-                <Label>Product</Label>
-                <Select
-                  value={line.product_id || undefined}
-                  onValueChange={(v) =>
+                <Label htmlFor={`product-${line.key}`}>Product</Label>
+                <select
+                  id={`product-${line.key}`}
+                  className={fieldClass}
+                  value={line.product_id}
+                  required
+                  onChange={(e) =>
                     setLines((prev) =>
                       prev.map((l, i) =>
-                        i === idx ? { ...l, product_id: v ?? "" } : l
+                        i === idx ? { ...l, product_id: e.target.value } : l
                       )
                     )
                   }
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select product" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products.map((p) => (
-                      <SelectItem key={p.id} value={String(p.id)}>
-                        {p.sku} — {p.name} (qty {p.quantity_on_hand})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <option value="" disabled>
+                    Select product
+                  </option>
+                  {products.map((p) => (
+                    <option key={p.id} value={String(p.id)}>
+                      {p.sku} — {p.name} (qty {p.quantity_on_hand})
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-1.5">
-                <Label>Qty</Label>
+                <Label htmlFor={`qty-${line.key}`}>Qty</Label>
                 <Input
+                  id={`qty-${line.key}`}
                   type="number"
                   min={1}
                   value={line.quantity}
