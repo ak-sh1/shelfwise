@@ -1,4 +1,4 @@
-# Render Blueprint — API + Postgres only (UI is on Vercel)
+# Render Blueprint — full stack (Postgres + API + Next.js UI)
 # https://dashboard.render.com/blueprints/new → connect ak-sh1/shelfwise
 
 databases:
@@ -24,3 +24,19 @@ services:
         value: "*"
       - key: PYTHONPATH
         value: /app
+
+  - type: web
+    name: shelfwise-web
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:render
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: SHELFWISE_API_ORIGIN
+        fromService:
+          type: web
+          name: shelfwise-api
+          property: hostport

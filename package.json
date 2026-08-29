@@ -7,6 +7,7 @@
     "dev:api": "cd backend && PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8331 --reload",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 --port 4331",
+    "start:render": "next start --hostname 0.0.0.0 --port ${PORT:-4331}",
     "lint": "eslint"
   },
   "dependencies": {

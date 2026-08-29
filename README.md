@@ -23,38 +23,27 @@ Multi-user inventory and order management for a small shop.
 | Owner | owner@shelfwise.demo    | owner123  |
 | Staff | staff@shelfwise.demo    | staff123  |
 
-## Live demo
+## Live demo (Render)
 
-**Frontend (Vercel):** [https://shelfwise-ak-dac3.vercel.app](https://shelfwise-ak-dac3.vercel.app)
+Everything runs on [Render](https://render.com): Postgres, FastAPI API, and Next.js UI.
 
-The UI is deployed on Vercel. The API runs on Render (Postgres + FastAPI). After both are live, set Vercel env `SHELFWISE_API_ORIGIN` to your Render API URL (see Deploy below).
+**After deploy:** open your **shelfwise-web** URL (e.g. `https://shelfwise-web.onrender.com`).
 
-| Role | Email | Password |
-|------|--------|----------|
-| Owner | owner@shelfwise.demo | owner123 |
-| Staff | staff@shelfwise.demo | staff123 |
+The UI proxies `/api/*` to the API service at runtime — no cross-origin setup needed.
 
-## Deploy (permanent)
-
-### 1 — Vercel (UI) — already connected
-
-Repo `ak-sh1/shelfwise` → project **shelfwise** on team **AK**. Pushes to `main` auto-deploy.
-
-### 2 — Render (API + Postgres)
+## Deploy on Render
 
 1. Open [Render Blueprint](https://dashboard.render.com/blueprints/new) and connect `ak-sh1/shelfwise`.
-2. Apply the blueprint (creates **shelfwise-db** + **shelfwise-api**).
-3. Copy the API URL when live (e.g. `https://shelfwise-api.onrender.com`).
+2. Apply the blueprint. It creates three resources:
+   - **shelfwise-db** — PostgreSQL
+   - **shelfwise-api** — FastAPI (Docker)
+   - **shelfwise-web** — Next.js UI
+3. Wait for all services to go live (free tier may cold-start on first visit).
+4. Use the **shelfwise-web** URL as your public app link.
 
-### 3 — Link Vercel → API
+If you previously had a broken or unrelated **shelfwise-api** service (e.g. wrong runtime), delete it in the Render dashboard before applying the blueprint, or create a fresh blueprint from this repo.
 
-In [Vercel → shelfwise → Settings → Environment Variables](https://vercel.com/ak-dac3/shelfwise/settings/environment-variables):
-
-| Name | Value |
-|------|--------|
-| `SHELFWISE_API_ORIGIN` | `https://shelfwise-api.onrender.com` (your Render API URL, no trailing slash) |
-
-Redeploy production. The Next.js app proxies `/api/*` to that origin.
+Pushes to the connected branch trigger auto-deploy on Render.
 
 ## Prerequisites
 
@@ -62,7 +51,7 @@ Redeploy production. The Next.js app proxies `/api/*` to that origin.
 - Python 3.11+
 - PostgreSQL 14+
 
-## Setup
+## Local development
 
 ### Database
 
@@ -99,7 +88,7 @@ npm run dev
 
 Open [http://127.0.0.1:4331](http://127.0.0.1:4331).
 
-The Next.js app proxies `/api/*` to the FastAPI server, so the browser does not need to reach port `8331` directly.
+The Next.js app proxies `/api/*` to the FastAPI server at `http://127.0.0.1:8331`.
 
 API docs: [http://127.0.0.1:8331/docs](http://127.0.0.1:8331/docs).
 
@@ -118,4 +107,5 @@ See `sample-products.csv`.
 ```
 backend/app/     FastAPI app, models, routers
 src/             Next.js App Router UI
+src/app/api/     Runtime /api proxy to FastAPI (local + Render)
 ```
