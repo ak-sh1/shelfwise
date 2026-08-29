@@ -10,7 +10,10 @@ class Settings(BaseSettings):
     jwt_secret: str = "shelfwise-dev-secret-change-me"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24
-    cors_origins: str = "http://127.0.0.1:4331,http://localhost:4331"
+    cors_origins: str = (
+        "http://127.0.0.1:4331,http://localhost:4331,"
+        "http://127.0.0.1:3000,http://localhost:3000"
+    )
     openai_api_key: str | None = None
     openai_model: str = "gpt-4o-mini"
 

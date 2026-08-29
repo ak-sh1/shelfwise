@@ -60,11 +60,13 @@ Tables are created and demo data is seeded on startup.
 
 ```bash
 npm install
-cp .env.local.example .env.local
+cp .env.local.example .env.local   # uses same-origin /api proxy by default
 npm run dev
 ```
 
 Open [http://127.0.0.1:4331](http://127.0.0.1:4331).
+
+The Next.js app proxies `/api/*` to the FastAPI server, so the browser does not need to reach port `8331` directly.
 
 API docs: [http://127.0.0.1:8331/docs](http://127.0.0.1:8331/docs).
 
