@@ -1,8 +1,5 @@
 # Render Blueprint — full stack (Postgres + API + Next.js UI)
 # https://dashboard.render.com/blueprints/new → connect ak-sh1/shelfwise
-#
-# Important: use a unique API name (shelfwise-backend) so this does not
-# collide with an unrelated existing service named shelfwise-api.
 
 databases:
   - name: shelfwise-db
@@ -11,12 +8,15 @@ databases:
 services:
   - type: web
     name: shelfwise-backend
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: .
+    runtime: python
     plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
       - key: DATABASE_URL
         fromDatabase:
           name: shelfwise-db
@@ -26,7 +26,7 @@ services:
       - key: CORS_ORIGINS
         value: "*"
       - key: PYTHONPATH
-        value: /app
+        value: .
 
   - type: web
     name: shelfwise-web
@@ -38,7 +38,6 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
-      # Private network address, e.g. shelfwise-backend:10000
       - key: SHELFWISE_API_ORIGIN
         fromService:
           type: web

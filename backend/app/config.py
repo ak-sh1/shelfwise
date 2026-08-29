@@ -9,6 +9,10 @@ def normalize_database_url(url: str) -> str:
         url = "postgresql://" + url[len("postgres://") :]
     if url.startswith("postgresql://") and "+psycopg2" not in url:
         url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+    # Render Postgres expects TLS for external hosts; harmless on local/private.
+    if "sslmode=" not in url and ("render.com" in url or "dpg-" in url):
+        sep = "&" if "?" in url else "?"
+        url = f"{url}{sep}sslmode=require"
     return url
 
 
