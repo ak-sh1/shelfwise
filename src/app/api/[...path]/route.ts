@@ -3,10 +3,18 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 function resolveApiOrigin(): string {
-  const raw =
-    process.env.SHELFWISE_API_ORIGIN?.replace(/\/$/, "") ||
-    "http://127.0.0.1:8331";
-  return /^https?:\/\//.test(raw) ? raw : `http://${raw}`;
+  const raw = (
+    process.env.SHELFWISE_API_ORIGIN ||
+    process.env.API_ORIGIN ||
+    "http://127.0.0.1:8331"
+  )
+    .trim()
+    .replace(/\/$/, "");
+
+  if (!raw) return "http://127.0.0.1:8331";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  // Render private hostport looks like "shelfwise-backend:10000"
+  return `http://${raw}`;
 }
 
 async function proxy(
@@ -18,9 +26,13 @@ async function proxy(
   const targetPath = path.length ? `/${path.join("/")}` : "";
   const url = `${origin}${targetPath}${req.nextUrl.search}`;
 
-  const headers = new Headers(req.headers);
-  headers.delete("host");
-  headers.delete("connection");
+  const headers = new Headers();
+  const auth = req.headers.get("authorization");
+  const contentType = req.headers.get("content-type");
+  const accept = req.headers.get("accept");
+  if (auth) headers.set("authorization", auth);
+  if (contentType) headers.set("content-type", contentType);
+  if (accept) headers.set("accept", accept);
 
   const init: RequestInit = {
     method: req.method,
@@ -32,15 +44,28 @@ async function proxy(
     init.body = await req.arrayBuffer();
   }
 
-  const res = await fetch(url, init);
-  const responseHeaders = new Headers(res.headers);
-  responseHeaders.delete("content-encoding");
+  try {
+    const res = await fetch(url, init);
+    const body = await res.arrayBuffer();
+    const responseHeaders = new Headers();
+    const resType = res.headers.get("content-type");
+    if (resType) responseHeaders.set("content-type", resType);
 
-  return new NextResponse(res.body, {
-    status: res.status,
-    statusText: res.statusText,
-    headers: responseHeaders,
-  });
+    return new NextResponse(body, {
+      status: res.status,
+      statusText: res.statusText,
+      headers: responseHeaders,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "proxy failed";
+    console.error("[api-proxy]", { url, origin, message });
+    return NextResponse.json(
+      {
+        detail: `API unreachable at ${origin}. Check SHELFWISE_API_ORIGIN and that shelfwise-backend is live. (${message})`,
+      },
+      { status: 502 }
+    );
+  }
 }
 
 export const GET = proxy;

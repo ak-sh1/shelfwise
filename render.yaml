@@ -1,5 +1,8 @@
 # Render Blueprint — full stack (Postgres + API + Next.js UI)
 # https://dashboard.render.com/blueprints/new → connect ak-sh1/shelfwise
+#
+# Important: use a unique API name (shelfwise-backend) so this does not
+# collide with an unrelated existing service named shelfwise-api.
 
 databases:
   - name: shelfwise-db
@@ -7,7 +10,7 @@ databases:
 
 services:
   - type: web
-    name: shelfwise-api
+    name: shelfwise-backend
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: .
@@ -35,8 +38,9 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
+      # Private network address, e.g. shelfwise-backend:10000
       - key: SHELFWISE_API_ORIGIN
         fromService:
           type: web
-          name: shelfwise-api
+          name: shelfwise-backend
           property: hostport

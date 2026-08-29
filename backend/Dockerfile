@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/app ./app
 
 ENV PYTHONPATH=/app
-ENV PORT=8331
-EXPOSE 8331
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8331}"]
+# Render sets PORT (default 10000); keep 8331 for local docker runs.
+ENV PORT=10000
+EXPOSE 10000
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}"]
